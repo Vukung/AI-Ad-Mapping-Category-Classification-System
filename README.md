@@ -1,5 +1,8 @@
 # AI Customer Support Automation
 
+https://github.com/user-attachments/assets/9c1d9fe9-484f-4feb-a64a-7a0dde463a90
+
+
 AI workflow that automatically categorizes customer support queries using an LLM and generates operational insights through analytics dashboards.
 
 This project demonstrates how LLMs can be integrated into automation pipelines to analyze customer support data and identify operational bottlenecks.
@@ -37,6 +40,7 @@ Pipeline:
 ```
 Google Sheets → n8n Workflow → Groq LLM Classification → Structured Dataset → Looker Dashboard
 ```
+<img width="1920" height="1080" alt="Workflow" src="https://github.com/user-attachments/assets/8e05822c-d85d-4cb8-9b32-f65263d36061" />
 
 ---
 
@@ -67,6 +71,7 @@ Example:
 ```
 2026-03-13 | Instagram | "Where is my order?" | Order Status | 0.91
 ```
+<img width="747" height="949" alt="Dataset - After1" src="https://github.com/user-attachments/assets/6169097b-5a79-48e6-812c-0ad155a2aa8b" />
 
 ---
 
@@ -104,7 +109,10 @@ Groq API limit:
 Implemented solution:
 
 - Loop node
+<img width="1919" height="926" alt="Loop Node" src="https://github.com/user-attachments/assets/288c1bb5-f6bc-45dc-bfb9-b654677539f4" />
 - Wait node (3 seconds delay)
+<img width="1919" height="942" alt="Wait Node" src="https://github.com/user-attachments/assets/0313394d-58b5-4803-b625-9ef5dfb984b3" />
+
 
 Processing rate:
 
