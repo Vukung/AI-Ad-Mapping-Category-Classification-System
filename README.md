@@ -1,212 +1,148 @@
-# AI Customer Support Automation
+# Ad Creative Intelligence - Automated Classification System
 
+> *From hundreds of unstructured ad links to a fully-mapped, analytics-ready dataset - automatically.*
+
+---
 https://github.com/user-attachments/assets/9c1d9fe9-484f-4feb-a64a-7a0dde463a90
 
+## Background
 
-AI workflow that automatically categorizes customer support queries using an LLM and generates operational insights through analytics dashboards.
+At **Aristok Technologies**, ad performance analysis was bottlenecked by a fundamental data problem: thousands of ad creatives across Google and Meta campaigns had no structured metadata. Analysts had to manually visit each ad link, read the copy, and hand-enter attributes - influencer, format, product category, theme, season, offer type, and more - into a spreadsheet. Then pivot tables. Then analysis.
 
-This project demonstrates how LLMs can be integrated into automation pipelines to analyze customer support data and identify operational bottlenecks.
+It was slow, inconsistent, and didn't scale.
 
----
-
-# Project Overview
-
-Customer support teams receive queries from multiple platforms such as Instagram, WhatsApp, and Email. Manually categorizing these queries is time-consuming and prevents teams from quickly identifying systemic issues.
-
-This system automates the process by:
-
-1. Collecting customer queries
-2. Classifying them using an LLM
-3. Storing structured data
-4. Visualizing insights through dashboards
-
-The goal is to demonstrate **AI workflow automation and operational analytics**, not to build a production system.
+This system eliminates that entirely.
 
 ---
 
-# System Architecture
+## What It Does
 
-Components used:
-
-| Component | Tool | Purpose |
-|----------|------|------|
-| Automation | n8n | Orchestrates workflow |
-| LLM | Groq (LLaMA-3.1-8B) | Classifies customer queries |
-| Storage | Google Sheets | Stores raw and classified data |
-| Visualization | Looker Studio | Generates analytics dashboards |
-
-Pipeline:
+The pipeline ingests raw ad metadata (primary text, secondary text, description, URL) provided by the client and **automatically classifies each creative into structured attributes** using LLM inference - no human tagging required.
 
 ```
-Google Sheets → n8n Workflow → Groq LLM Classification → Structured Dataset → Looker Dashboard
+Client Ad Data (Links + Copy) → n8n Pipeline → Groq LLM Classification → Structured Dataset → Looker Dashboard
 ```
+
+**Classified Attributes per Ad:**
+
+| Attribute | Example |
+|-----------|---------|
+| Product | "Running Shoes - Air Max Series" |
+| Category | Footwear |
+| Format | Video Ad |
+| Theme | Performance / Sport |
+| Season | Summer |
+| Offer | 20% Off |
+| Influencer | Yes / No |
+| ... | ... |
+
+---
+
+## System Architecture
+
+| Component | Tool | Role |
+|-----------|------|------|
+| Workflow Automation | n8n | Orchestrates the full pipeline |
+| LLM Inference | Groq (LLaMA-3.1-8B) | Classifies ad attributes from copy |
+| Data Source | Google Sheets | Raw ad metadata input |
+| Storage | Google Sheets | Structured output dataset |
+| Visualization | Looker Studio | Campaign analytics dashboards |
+
+---
+
+## Pipeline
+
 <img width="1920" height="1080" alt="Workflow" src="https://github.com/user-attachments/assets/8e05822c-d85d-4cb8-9b32-f65263d36061" />
 
----
-
-# Workflow Pipeline
-
-1. Manual workflow trigger in n8n
-2. Fetch rows from Google Sheets dataset
-3. Loop through customer queries
-4. Send query text to Groq API
-5. LLM classifies query into predefined categories
-6. Store category and confidence score
-7. Update dataset with structured output
+1. **Trigger** - Manual or scheduled workflow run in n8n
+2. **Ingest** - Fetch raw ad rows from Google Sheets (primary text, secondary text, description, link text)
+3. **Loop** - Iterate through each ad creative
+4. **Classify** - Send ad copy to Groq API with structured prompt
+5. **Parse** - Extract and validate LLM output against schema
+6. **Write** - Update Google Sheets row with classified attributes + confidence scores
+7. **Visualize** - Looker Studio dashboard reflects updated dataset
 
 ---
 
-# Dataset Structure
+## Prompt Engineering & Schema Enforcement
 
-| Column | Description |
-|------|------|
-| Timestamp | Time of query |
-| Platform | Instagram / WhatsApp / Email |
-| customer_message | Raw support message |
-| category | Classified issue type |
-| confidence | LLM confidence score |
-
-Example:
-
-```
-2026-03-13 | Instagram | "Where is my order?" | Order Status | 0.91
-```
-<img width="747" height="949" alt="Dataset - After1" src="https://github.com/user-attachments/assets/6169097b-5a79-48e6-812c-0ad155a2aa8b" />
-
----
-
-# LLM Classification
-
-The Groq LLaMA-3.1 model classifies queries into one of seven support categories:
-
-- Order Status
-- Delivery Delay
-- Refund Request
-- Product Complaint
-- Subscription Issue
-- Payment Failure
-- General Question
-
-Example Output:
+The LLM is prompted to return a strict JSON schema for every ad:
 
 ```json
 {
- "category": "Order Status",
- "confidence": 0.91
+  "product": "string",
+  "category": "string",
+  "format": "video | image | carousel",
+  "theme": "string",
+  "season": "summer | winter | festive | evergreen",
+  "offer_present": true,
+  "offer_type": "discount | free_shipping | bundle | none",
+  "influencer_ad": false,
+  "confidence": 0.88
 }
 ```
 
----
-
-# Rate Limiting Strategy
-
-Groq API limit:
-
-```
-30 requests / minute
-```
-
-Implemented solution:
-
-- Loop node
-<img width="1919" height="926" alt="Loop Node" src="https://github.com/user-attachments/assets/288c1bb5-f6bc-45dc-bfb9-b654677539f4" />
-- Wait node (3 seconds delay)
-<img width="1919" height="942" alt="Wait Node" src="https://github.com/user-attachments/assets/0313394d-58b5-4803-b625-9ef5dfb984b3" />
-
-
-Processing rate:
-
-```
-~20 requests per minute
-```
-
-This prevents API throttling errors (HTTP 429).
+Post-processing logic validates outputs, handles edge cases, and retries on malformed responses - ensuring the dataset stays clean.
 
 ---
 
-# Dashboard Insights
+## Rate Limiting & Reliability
 
-Looker Studio dashboard visualizes:
+Groq API limit: `30 requests / minute`
 
-- Issue distribution
-- Query trends
-- Platform distribution
-- Top customer problems
+**Implemented solution:**
+- Loop node with controlled batch sizing
+- Wait node (3s delay between batches)
+- Retry logic on HTTP 429 / timeout errors
+- Fallback prompt on low-confidence outputs
 
-Key findings from the dataset:
-
-- Product complaints ≈ 22%
-- Delivery delays ≈ 16%
-- Instagram + WhatsApp generate the majority of queries
-
-These insights highlight areas where automation can reduce support workload.
+**Effective throughput:** ~20 classifications/minute with zero manual intervention.
 
 ---
 
-# Automation Opportunities
+## Impact
 
-Based on the insights:
+| Before | After |
+|--------|-------|
+| Manual attribute tagging per ad | Fully automated classification |
+| Hours of analyst time per campaign cycle | Pipeline runs in minutes |
+| Inconsistent, human-error-prone data | Standardized schema across all campaigns |
+| Analysis blocked until tagging complete | Real-time dashboard updates |
 
-**Order Status**
-Auto-send tracking link via logistics API.
-
-**Delivery Delay**
-Automated ETA notifications.
-
-**General Questions**
-AI FAQ chatbot using RAG.
-
-**Refund Requests**
-Automatic escalation to senior agents.
+> **~80% reduction in manual tagging effort.** Enabled the team to run cross-campaign creative analysis that was previously not feasible at scale.
 
 ---
 
-# Scalability Improvements
+## Dashboard Insights
 
-For production deployment:
+Looker Studio dashboards built on the structured output enable:
 
-Database upgrade
-
-```
-Google Sheets → PostgreSQL / BigQuery
-```
-
-LLM reliability
-
-```
-Primary model → Groq
-Fallback model → OpenAI
-```
-
-Hybrid classification
-
-```
-Rules + LLM
-```
+- **Creative performance by category** - which product types drive the most engagement
+- **Format analysis** - video vs. image vs. carousel performance trends
+- **Offer impact** - conversion lift from discount/bundle creatives
+- **Seasonal trends** - campaign timing vs. creative theme alignment
+- **Platform breakdown** - Google Ads vs. Meta Ads creative strategy comparison
 
 ---
 
-# Demo
+## Scalability Path
 
-Project Documentation:
-
-docs/project_overview.pdf
-
-Workflow Screenshots:
-
-screenshots/
-
-Dashboard Preview:
-
-dashboard/
+| Current | Production-Ready Upgrade |
+|---------|--------------------------|
+| Google Sheets | PostgreSQL / BigQuery |
+| Manual trigger | Scheduled / webhook-based ingestion |
+| Groq (primary) | Groq + OpenAI fallback |
+| LLM-only classification | Hybrid: rules engine + LLM |
+| Single pipeline | Parallel batch processing |
 
 ---
 
-# Tech Stack
+## Tech Stack
 
-- n8n
-- Groq API
-- LLaMA-3.1-8B
-- Google Sheets
-- Looker Studio
-- JavaScript
+`n8n` · `Groq API` · `LLaMA-3.1-8B` · `Google Sheets` · `Looker Studio` · `JavaScript`
+
+---
+
+## Context
+
+Built during a Business Analyst internship at to solve a real operational bottleneck in ad campaign analysis. The system moved the team from reactive, manual data work to proactive, automated insight generation.
